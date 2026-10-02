@@ -1,0 +1,28 @@
+{
+  "id": "jq8np6ga",
+  "tipo": "podio",
+  "numero": "0001",
+  "publicado": true,
+  "marca": {
+    "fundo": "#141410",
+    "cor1": "#e1030e",
+    "cor2": "#ca9a2e",
+    "logo": "logos/batuqueiro.jpg"
+  },
+  "evento": {
+    "nome": "Torneio Batuqueiro 2027",
+    "data": "2027-05-07",
+    "local": "Viana do castelo"
+  },
+  "vencedor": {
+    "nome": "Professor Scooby-Doo",
+    "posicao": 1,
+    "categoria": "infantil",
+    "resultado": ""
+  },
+  "mensagem": "",
+  "fotos": [
+    "fotos/jq8np6ga/mur6d6kb-1.jpg"
+  ],
+  "consentimento": true
+}
