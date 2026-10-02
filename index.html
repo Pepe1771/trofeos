@@ -27,7 +27,21 @@
     min-height: 100vh; color: var(--white); background: var(--bg);
     font-family: "Fredoka", "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
     display: flex; justify-content: center; padding: 22px 18px 30px;
+    position: relative; overflow-x: clip;
   }
+  main { position: relative; z-index: 1; }
+
+  /* Adornos com as cores do cliente, no fundo da página (nunca por cima das fotos) */
+  .deco { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .deco i { position: absolute; display: block; border-radius: 50%; }
+  .deco .d1 { width: 150px; height: 150px; top: -80px; right: -78px; background: var(--c1); }
+  .deco .d2 { width: 130px; height: 130px; top: 250px; left: -70px; background: color-mix(in srgb, var(--c1) 38%, var(--bg)); }
+  .deco .d3 { width: 96px; height: 96px; top: 150px; left: -58px; background: transparent; box-shadow: 18px 0 0 0 var(--c2); }
+  .deco .d4 { width: 26px; height: 26px; top: 128px; right: 26px; background: var(--c2); }
+  .deco .d5 { width: 16px; height: 16px; top: 505px; left: 22px; background: rgba(255,255,255,.85); }
+  .deco .d6 { width: 220px; height: 220px; bottom: -110px; left: -80px; background: color-mix(in srgb, var(--c1) 38%, var(--bg)); }
+  .deco .d7 { width: 100px; height: 100px; bottom: 150px; right: -55px; background: var(--c1); }
+  .deco .d8 { width: 70px; height: 70px; bottom: 60px; right: 40px; background: transparent; box-shadow: -12px 0 0 0 var(--c2); }
   main { width: 100%; max-width: 460px; display: flex; flex-direction: column; min-height: calc(100vh - 52px); }
   img { max-width: 100%; display: block; }
   [hidden] { display: none !important; }
@@ -41,7 +55,10 @@
   .top p { font-size: .95rem; color: var(--soft); line-height: 1.35; }
   .top strong { display: block; color: var(--white); font-weight: 600; font-size: 1.1rem; line-height: 1.2; margin-bottom: 2px; }
 
-  .hero { position: relative; margin: 0 auto 24px; width: min(100%, 360px); aspect-ratio: 1; }
+  .hero { position: relative; margin: 0 auto 24px; width: min(100%, 360px); aspect-ratio: 1; isolation: isolate; }
+  .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; z-index: -1; }
+  .hero::before { width: 30%; height: 30%; left: -7%; top: -5%; background: var(--c2); }
+  .hero::after { width: 15%; height: 15%; left: 2%; bottom: 4%; background: color-mix(in srgb, var(--c1) 38%, var(--bg)); box-shadow: 0 0 0 5px var(--bg); }
   .blob {
     position: absolute; inset: 0; overflow: hidden; cursor: zoom-in;
     border-radius: 58% 42% 50% 50% / 46% 54% 46% 54%;
@@ -104,6 +121,7 @@
 </style>
 </head>
 <body>
+<div class="deco" aria-hidden="true"><i class="d1"></i><i class="d2"></i><i class="d3"></i><i class="d4"></i><i class="d5"></i><i class="d6"></i><i class="d7"></i><i class="d8"></i></div>
 <main>
   <p class="state" id="loading">A carregar…</p>
 
@@ -161,12 +179,13 @@
 
   var id = (new URLSearchParams(location.search).get('id') || '').trim().toLowerCase();
   if (!id) return show('empty');
-  if (!/^[a-z0-9]{4,20}$/.test(id)) return show('pending');
+  var unknown = function () { $('pending').querySelector('.seal').hidden = true; show('pending'); };
+  if (!/^[a-z0-9]{4,20}$/.test(id)) return unknown();
 
   fetch('dados/' + id + '.json', { cache: 'no-cache' })
     .then(function (r) { if (!r.ok) throw new Error('sem dados'); return r.json(); })
     .then(render)
-    .catch(function () { show('pending'); });
+    .catch(unknown);
 
   function applyBrand(m, ev) {
     if (!m) return;
