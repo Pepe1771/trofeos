@@ -93,6 +93,8 @@
   .thumbs { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
   .thumbs img { width:84px; height:84px; object-fit:cover; border-radius:10px; }
   .thumbs .first { box-shadow:0 0 0 3px var(--royal); }
+  .panel { margin-top:12px; padding:14px; border:2px solid var(--line, #CBD5F5); border-radius:14px; }
+  .panel input[readonly] { font-size:.85rem; color:#565B8C; }
   .cat-row { display:grid; grid-template-columns:1fr 92px 92px auto; gap:8px; align-items:end; margin-bottom:8px; }
   .cat-row label { margin:0 0 4px; font-size:.85rem; color:var(--muted); }
   .cat-row .rm { background:#fff; color:#A93226; box-shadow:inset 0 0 0 2px #F1C5BF; min-height:46px; padding:0 14px; }
@@ -122,8 +124,10 @@
       <ul class="comp-list" id="comp-list"></ul>
 
       <div class="settings">
-        <label for="base" style="margin-top:0">Dirección de la web de trofeos</label>
+        <label for="base" style="margin-top:0">Dirección de la web de trofeos <span class="sub">(déjala vacía para usar la de esta página; cámbiala solo cuando tengas tu subdominio)</span></label>
         <input type="url" id="base" placeholder="https://trofeos.tudominio.pt/">
+        <label for="wa">Tu número de WhatsApp <span class="sub">(con 351 delante; el cliente te enviará la lista aquí)</span></label>
+        <input type="tel" id="wa" placeholder="351912345678" inputmode="numeric">
         <div class="actions">
           <button type="button" class="secondary small" id="export">Exportar copia de seguridad</button>
           <button type="button" class="secondary small" id="import-btn">Importar copia</button>
@@ -188,8 +192,8 @@
       </div>
       <div class="actions">
         <button type="button" id="d-zip">Descargar paquete para GitHub (.zip)</button>
-        <button type="button" class="secondary" id="d-client">Enviar al cliente (atribución)</button>
-        <button type="button" class="secondary" id="d-import-btn">Importar atribuciones del cliente</button>
+        <button type="button" class="secondary" id="d-client">Enlace para el cliente</button>
+        <button type="button" class="secondary" id="d-paste-btn">Pegar respuesta del cliente</button>
         <input type="file" id="d-import" accept=".json,application/json" hidden>
         <button type="button" class="secondary" id="d-csv">Lista (CSV)</button>
         <button type="button" class="secondary" id="d-add-btn">Añadir piezas</button>
@@ -199,6 +203,25 @@
         <div id="a-rows"></div>
         <button type="button" class="link" id="a-add-cat">+ Añadir categoría</button>
         <div class="actions"><button type="button" id="a-go">Añadir piezas</button></div>
+      </div>
+      <div id="d-share" class="panel" hidden>
+        <label for="share-link" style="margin-top:0">Enlace mágico para el cliente</label>
+        <input type="text" id="share-link" readonly>
+        <div class="actions">
+          <button type="button" class="small" id="share-wa">Enviar por WhatsApp</button>
+          <button type="button" class="secondary small" id="share-copy">Copiar enlace</button>
+          <button type="button" class="secondary small" id="share-open">Abrir</button>
+          <button type="button" class="link" id="d-client-file">Descargar como archivo</button>
+        </div>
+        <p class="sub" style="line-height:1.4">Al tocarlo, el cliente ve sus trofeos ya cargados. Si añades piezas a la competición, genera y envía el enlace otra vez.</p>
+      </div>
+      <div id="d-paste" class="panel" hidden>
+        <label for="paste-text" style="margin-top:0">Pega aquí el mensaje que te envió el cliente</label>
+        <textarea id="paste-text" rows="6" placeholder="Atribuições — …&#10;…&#10;PP1:…"></textarea>
+        <div class="actions">
+          <button type="button" class="small" id="paste-go">Cargar atribuciones</button>
+          <button type="button" class="link" id="d-import-btn">o importar un archivo</button>
+        </div>
       </div>
       <div id="d-msg"></div>
 
@@ -273,7 +296,12 @@
   function rnd(len) { var a = new Uint32Array(len), s = ''; crypto.getRandomValues(a); for (var i = 0; i < len; i++) s += ALPHA[a[i] % ALPHA.length]; return s; }
   function allCodes() { var u = {}; db.comps.forEach(function (c) { c.codes.forEach(function (k) { u[k.code] = 1; }); }); return u; }
   function slug(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'competicion'; }
-  function baseUrl() { var b = (db.base || '').trim(); if (b && !/\/$/.test(b)) b += '/'; return b; }
+  function autoBase() {
+    // La dirección donde está publicado este mismo gestor (p. ej. https://pepe1771.github.io/trofeos/)
+    if (!/^https?:$/.test(location.protocol)) return '';
+    return location.origin + location.pathname.replace(/[^\/]*$/, '');
+  }
+  function baseUrl() { var b = (db.base || '').trim() || autoBase(); if (b && !/\/$/.test(b)) b += '/'; return b; }
   function urlFor(code) { return (baseUrl() || 'https://…/') + '?id=' + code; }
   function fmtDate(d) { if (!d) return ''; var x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function compById(id) { return db.comps.find(function (c) { return c.id === id; }); }
@@ -316,7 +344,10 @@
 
   /* ---------- lista ---------- */
   $('base').value = db.base || '';
+  $('base').placeholder = autoBase() || 'https://trofeos.tudominio.pt/';
   $('base').addEventListener('change', function () { db.base = this.value.trim(); save(); });
+  $('wa').value = db.wa || '';
+  $('wa').addEventListener('change', function () { db.wa = this.value.replace(/\D/g, ''); this.value = db.wa; save(); });
 
   function renderList() {
     var ul = $('comp-list'); ul.innerHTML = '';
@@ -493,35 +524,70 @@
     download(new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'codigos-' + slug(current.name) + '.csv');
   };
 
+  function enc(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function dec(t) { t = t.replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '='; return JSON.parse(decodeURIComponent(escape(atob(t)))); }
+  function clientPayload(comp) {
+    var cats = [];
+    var rows = comp.codes.map(function (k) {
+      var cat = k.category === 'General' ? '' : (k.category || '');
+      var ci = cats.indexOf(cat); if (ci < 0) { cats.push(cat); ci = cats.length - 1; }
+      return [k.code, k.numero, k.tipo === 'participacao' ? 1 : 0, ci, k.tipo === 'participacao' ? 0 : (k.place || 0)];
+    });
+    var m = { fundo: comp.marca.fundo, cor1: comp.marca.cor1, cor2: comp.marca.cor2 };
+    if (comp.marca.logo) m.logo = comp.marca.logo;
+    return { v: 2, i: comp.id, n: comp.name, d: comp.date || '', l: comp.place || '', m: m, w: db.wa || '', c: cats, p: rows };
+  }
+  function magicLink(comp) { return baseUrl() + 'atribuir.html#c=' + enc(clientPayload(comp)); }
+
   $('d-client').onclick = function () {
+    $('d-paste').hidden = true;
+    var link = magicLink(current);
+    $('share-link').value = link; $('d-share').hidden = !$('d-share').hidden;
+    if (!db.wa) msg('d-msg', 'Consejo: pon tu número de WhatsApp abajo, en la pantalla principal, y el cliente podrá enviarte la lista con un solo botón.', true); else msg('d-msg');
+  };
+  $('share-copy').onclick = function () { copy($('share-link').value, this); };
+  $('share-open').onclick = function () { window.open($('share-link').value, '_blank'); };
+  $('share-wa').onclick = function () {
+    var t = 'Olá! Aqui está o link para atribuir os troféus de ' + current.name + '. Basta abri-lo no telemóvel e tocar em cada troféu para indicar quem o ganhou:\n\n' + $('share-link').value;
+    window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank');
+  };
+  $('d-client-file').onclick = function () {
     var out = {
-      id: current.id, nome: current.name, data: current.date || '', local: current.place || '',
-      marca: current.marca,
+      id: current.id, nome: current.name, data: current.date || '', local: current.place || '', marca: current.marca, whatsapp: db.wa || '',
       pecas: current.codes.map(function (k) { return { code: k.code, numero: k.numero, tipo: k.tipo || 'podio', categoria: k.category === 'General' ? '' : k.category, lugar: k.place }; })
     };
     download(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }), 'competicao-' + slug(current.name) + '.json');
-    var link = (baseUrl() || 'https://.../') + 'atribuir.html';
-    msg('d-msg', 'Archivo del cliente descargado. Enviaselo junto con este enlace para que atribuya los trofeos desde el movil: ' + link, true);
   };
 
+  function applyAttributions(list) {
+    var byCode = {}, byNum = {};
+    current.codes.forEach(function (k) { byCode[k.code] = k; byNum[k.numero] = k; });
+    var n = 0, miss = 0;
+    list.forEach(function (a) {
+      var k = byCode[a.code] || byNum[a.numero];
+      if (!k || !a.nome) { miss++; return; }
+      k.pending = { nome: a.nome, posicao: a.posicao || null }; n++;
+    });
+    save(); renderDetail();
+    msg('d-msg', 'Cargadas ' + n + ' atribuciones' + (miss ? ' (' + miss + ' no son de esta competición)' : '') + '. Ahora pulsa «Rellenar» en cada pieza para añadir la foto y publicar.', n > 0);
+  }
+  $('d-paste-btn').onclick = function () { $('d-share').hidden = true; $('d-paste').hidden = !$('d-paste').hidden; if (!$('d-paste').hidden) $('paste-text').focus(); };
+  $('paste-go').onclick = function () {
+    var m = $('paste-text').value.match(/PP1:([A-Za-z0-9_-]+)/);
+    if (!m) return msg('d-msg', 'No encuentro el código PP1 en el texto. Copia el mensaje completo del cliente, incluida la última línea.', false);
+    var d; try { d = dec(m[1]); } catch (e) { return msg('d-msg', 'El código está cortado. Pide al cliente que vuelva a enviarlo.', false); }
+    if (d.i && d.i !== current.id) return msg('d-msg', 'Ese mensaje es de otra competición. Ábrela y pégalo allí.', false);
+    applyAttributions((d.a || []).map(function (r) { return { code: r[0], nome: r[1], posicao: r[2] || null }; }));
+    $('paste-text').value = ''; $('d-paste').hidden = true;
+  };
   $('d-import-btn').onclick = function () { $('d-import').click(); };
   $('d-import').onchange = function () {
     var f = this.files[0]; this.value = ''; if (!f) return;
     f.text().then(function (t) {
       var d = JSON.parse(t);
       if (!d || !Array.isArray(d.atribuicoes)) throw 0;
-      var byCode = {}; current.codes.forEach(function (k) { byCode[k.code] = k; });
-      var byNum = {}; current.codes.forEach(function (k) { byNum[k.numero] = k; });
-      var n = 0;
-      d.atribuicoes.forEach(function (a) {
-        var k = byCode[a.code] || byNum[a.numero];
-        if (!k || !a.nome) return;
-        k.pending = { nome: a.nome, posicao: a.posicao || null };
-        n++;
-      });
-      save(); renderDetail();
-      msg('d-msg', 'Importadas ' + n + ' atribuciones. Ahora, en cada pieza marcada como pendiente de publicar, pulsa Rellenar para anadir la foto y publicar.', true);
-    }).catch(function () { msg('d-msg', 'Ese archivo no es una lista de atribuciones valida.', false); });
+      applyAttributions(d.atribuicoes);
+    }).catch(function () { msg('d-msg', 'Ese archivo no es una lista de atribuciones válida.', false); });
   };
   function dataUrlToBlob(d) { var p = d.split(','), b = atob(p[1]), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return new Blob([a], { type: 'image/png' }); }
   function baseRecord(comp, k) {

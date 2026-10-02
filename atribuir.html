@@ -35,7 +35,7 @@
   .filters{display:flex;gap:8px;margin-bottom:12px}
   .filters button{flex:1;min-height:42px;padding:8px}
   .filters button[aria-pressed="false"]{background:#fff;color:var(--bg);box-shadow:inset 0 0 0 2px var(--line)}
-  ul.pieces{list-style:none}
+  ul.pieces{list-style:none;padding:0}
   ul.pieces li{display:flex;align-items:center;gap:12px;padding:12px;border:2px solid var(--line);border-radius:16px;margin-bottom:10px;cursor:pointer}
   ul.pieces li.done{border-color:#9FE0BC;background:#F2FCF6}
   ul.pieces li.flash{border-color:var(--c2);box-shadow:0 0 0 3px rgba(0,153,254,.25)}
@@ -74,15 +74,15 @@
 
 <main>
   <section class="card" id="setup">
-    <p class="intro">Para começar, abra o link que recebeu da PrismaPrint 3D para esta competição, ou importe o ficheiro da competição.</p>
-    <label for="file" class="scan" style="display:block">Ficheiro da competição</label>
+    <p class="intro">Para começar, abra o link que recebeu da PrismaPrint 3D para esta competição.</p>
+    <label for="file" class="scan" style="display:block">Ou, se recebeu um ficheiro, importe-o aqui</label>
     <input type="file" id="file" accept=".json,application/json">
     <div id="setup-msg"></div>
   </section>
 
   <div id="app" hidden>
     <section class="card">
-      <p class="intro">Toque num troféu da lista para indicar quem o ganhou. No fim, exporte e envie o ficheiro à PrismaPrint 3D junto com as fotos.</p>
+      <p class="intro">Toque num troféu da lista para indicar quem o ganhou. No fim, envie a lista à PrismaPrint 3D e mande também as fotos.</p>
       <div class="progress"><div class="bar"><i id="bar"></i></div><b id="count">0 / 0</b></div>
       <button type="button" class="scan secondary" id="scan" hidden>📲 Aproximar troféu (ler etiqueta)</button>
     </section>
@@ -96,8 +96,9 @@
     <ul class="pieces" id="list"></ul>
 
     <section class="card">
-      <button type="button" class="scan" id="export">Exportar e enviar à PrismaPrint 3D</button>
-      <footer>Os dados ficam só neste telemóvel até exportar. Nada é enviado automaticamente.</footer>
+      <button type="button" class="scan" id="export">Enviar à PrismaPrint 3D</button>
+      <button type="button" class="scan secondary" id="copy-msg">Copiar mensagem</button>
+      <footer>Os dados ficam guardados neste telemóvel até os enviar. Pode fechar a página e voltar a abrir o link: continua onde parou.</footer>
     </section>
   </div>
 </main>
@@ -134,9 +135,20 @@
   function toast(t){var e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(function(){e.remove()},1800)}
   function msg(el,t){ $(el).innerHTML=''; if(!t)return; var d=document.createElement('div');d.className='msg err';d.textContent=t;$(el).appendChild(d)}
 
-  // Carregar competição: por URL (?c=base64) ou por ficheiro
-  var p=new URLSearchParams(location.search).get('c');
-  if(p){ try{ load(JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/g,'+').replace(/_/g,'/')))))); }catch(e){} }
+  // Codificação compacta usada no link mágico e na resposta
+  function enc(o){ return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+  function dec(t){ t=t.replace(/-/g,'+').replace(/_/g,'/'); while(t.length%4)t+='='; return JSON.parse(decodeURIComponent(escape(atob(t)))); }
+  function expand(c){
+    if(!c||c.v!==2)return c;
+    return { id:c.i, nome:c.n||'', data:c.d||'', local:c.l||'', marca:c.m||{}, whatsapp:c.w||'',
+      pecas:(c.p||[]).map(function(r){ return { code:r[0], numero:r[1], tipo:r[2]?'participacao':'podio', categoria:(c.c||[])[r[3]]||'', lugar:r[4]||null }; }) };
+  }
+
+  // Carregar competição: link mágico (#c=…), link antigo (?c=…) ou ficheiro
+  var fromHash=(location.hash.match(/[#&]c=([A-Za-z0-9_-]+)/)||[])[1];
+  var fromQuery=new URLSearchParams(location.search).get('c');
+  var token=fromHash||fromQuery;
+  if(token){ try{ load(expand(dec(token))); }catch(e){ msg('setup-msg','Este link está incompleto. Peça à PrismaPrint 3D que o envie de novo.'); } }
 
   $('file').onchange=function(){
     var f=this.files[0]; if(!f)return;
@@ -253,21 +265,31 @@
     }catch(e){toast('Este telemóvel não lê etiquetas pelo navegador')}
   };
 
-  $('export').onclick=function(){
-    var out={id:comp.id, nome:comp.nome, atribuicoes:[]};
+  function buildMessage(){
+    var lines=[], rows=[];
     comp.pecas.forEach(function(p){
-      var a=comp.atribuicoes[p.code];
-      if(a&&a.nome){ var o={code:p.code, numero:p.numero, tipo:p.tipo, nome:a.nome}; if(p.tipo!=='participacao')o.posicao=a.posicao; out.atribuicoes.push(o); }
+      var a=comp.atribuicoes[p.code]; if(!a||!a.nome)return;
+      var isPart=p.tipo==='participacao';
+      lines.push(p.numero+' · '+a.nome+' · '+(isPart?'Participação':(a.posicao?a.posicao+'.º lugar':'Pódio'))+(p.categoria?' ('+p.categoria+')':''));
+      rows.push([p.code,a.nome,isPart?0:(a.posicao||0)]);
     });
-    if(!out.atribuicoes.length){ toast('Ainda não atribuiu nenhum troféu'); return; }
-    var blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
-    var name='atribuicoes-'+(comp.nome||'competicao').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.json';
-    var file=new File([blob],name,{type:'application/json'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({files:[file],title:'Atribuições de troféus',text:'Lista de vencedores — '+(comp.nome||'')}).catch(function(){dl(blob,name)});
-    } else { dl(blob,name); }
+    if(!rows.length)return null;
+    return 'Atribuições — '+(comp.nome||'')+' ('+rows.length+'/'+comp.pecas.length+')\n\n'+lines.join('\n')+
+      '\n\nCódigo para a PrismaPrint 3D (não apagar):\nPP1:'+enc({i:comp.id,a:rows});
+  }
+  function copyText(t){
+    var ok=function(){toast('Mensagem copiada')};
+    var fb=function(){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok()}catch(e){}ta.remove()};
+    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(ok,fb);else fb();
+  }
+  $('export').onclick=function(){
+    var t=buildMessage(); if(!t){toast('Ainda não atribuiu nenhum troféu');return;}
+    var w=String(comp.whatsapp||'').replace(/\D/g,'');
+    if(w){ location.href='https://wa.me/'+w+'?text='+encodeURIComponent(t); return; }
+    if(navigator.share){ navigator.share({title:'Atribuições de troféus',text:t}).catch(function(){}); }
+    else copyText(t);
   };
-  function dl(blob,name){ var a=document.createElement('a');a.href=URL.createObjectURL(a._b=blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000); toast('Ficheiro exportado'); }
+  $('copy-msg').onclick=function(){ var t=buildMessage(); if(!t){toast('Ainda não atribuiu nenhum troféu');return;} copyText(t); };
 })();
 </script>
 </body>
