@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#09094F" id="theme-color">
+<title>Troféu</title>
+<link rel="icon" href="logo.webp" id="favicon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Cores por defeito (PrismaPrint 3D). Cada evento pode trocá-las em "marca". */
+    --bg: #09094F; --c1: #3856DA; --c2: #0099FE;
+    --white: #FFFFFF; --soft: rgba(255,255,255,.74);
+    --gold: #FFC43D; --silver: #C9D2E3; --bronze: #D98B4E;
+    --medal: var(--c2);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; margin: 0; }
+  html { background: var(--bg); scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    min-height: 100vh; color: var(--white); background: var(--bg);
+    font-family: "Fredoka", "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: flex; justify-content: center; padding: 22px 18px 30px;
+  }
+  main { width: 100%; max-width: 460px; display: flex; flex-direction: column; min-height: calc(100vh - 52px); }
+  img { max-width: 100%; display: block; }
+  [hidden] { display: none !important; }
+
+  /* Selo com o logo do cliente (fundo branco para qualquer logo) */
+  .seal { background: var(--white); border-radius: 26px; padding: 8px; box-shadow: 0 5px 0 var(--c1); }
+  .seal img { width: 100%; height: 100%; object-fit: contain; }
+
+  .top { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; }
+  .top .seal { width: 76px; height: 76px; flex: none; border-radius: 20px; padding: 5px; }
+  .top p { font-size: .95rem; color: var(--soft); line-height: 1.35; }
+  .top strong { display: block; color: var(--white); font-weight: 600; font-size: 1.1rem; line-height: 1.2; margin-bottom: 2px; }
+
+  .hero { position: relative; margin: 0 auto 24px; width: min(100%, 360px); aspect-ratio: 1; }
+  .blob {
+    position: absolute; inset: 0; overflow: hidden; cursor: zoom-in;
+    border-radius: 58% 42% 50% 50% / 46% 54% 46% 54%;
+    background: var(--c1);
+    box-shadow: 0 0 0 6px var(--white), 14px 14px 0 6px var(--c1);
+  }
+  .blob img { width: 100%; height: 100%; object-fit: cover; }
+  .medal {
+    position: absolute; right: -4px; bottom: 6px; width: 112px; height: 112px;
+    border-radius: 50%; background: var(--medal); color: #1A1A1A;
+    display: grid; place-content: center; text-align: center;
+    border: 6px solid var(--white); box-shadow: 0 6px 0 rgba(0,0,0,.4);
+    animation: drop .7s cubic-bezier(.3,1.6,.5,1) .15s both;
+  }
+  .medal b { font-size: 2.7rem; font-weight: 700; line-height: .95; }
+  .medal span { font-size: .85rem; font-weight: 600; }
+  .medal.part { background: var(--white); color: #1A1A1A; }
+  .medal.part b { font-size: 2.2rem; }
+  .medal.part span { display: none; }
+  .medal.part .pname { display: block; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  @keyframes drop { from { transform: translateY(-40px) scale(.5) rotate(-20deg); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .medal { animation: none; } }
+
+  .winner { text-align: center; }
+  .winner h1 { font-size: clamp(2rem, 9vw, 2.6rem); font-weight: 700; line-height: 1.05; }
+  .winner .cat { margin-top: 8px; font-size: 1.1rem; color: var(--soft); }
+  .winner .result {
+    display: inline-block; margin-top: 14px; padding: 8px 18px; border-radius: 999px;
+    background: var(--white); color: #1A1A1A; font-weight: 600; font-size: 1.05rem;
+  }
+  .msg {
+    margin: 24px auto 0; max-width: 34ch; text-align: center; font-size: 1.08rem; line-height: 1.5;
+    padding-top: 20px; border-top: 3px solid var(--c2);
+  }
+
+  .gallery { margin-top: 32px; }
+  .gallery h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .grid button { padding: 0; border: 0; background: var(--c1); border-radius: 18px; overflow: hidden; aspect-ratio: 1; cursor: zoom-in; }
+  .grid button:first-child:nth-last-child(odd) { grid-column: span 2; aspect-ratio: 16/10; }
+  .grid img { width: 100%; height: 100%; object-fit: cover; }
+  .grid button:focus-visible, .close:focus-visible, .blob:focus-visible { outline: 3px solid var(--c2); outline-offset: 3px; }
+
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: grid; place-items: center; padding: 20px; z-index: 10; }
+  .lightbox img { max-height: 86vh; border-radius: 14px; }
+  .close {
+    position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px;
+    width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--white); color: #1A1A1A;
+    font: inherit; font-size: 1.5rem; font-weight: 600; cursor: pointer;
+  }
+
+  .state { text-align: center; padding-top: 7vh; }
+  .state .seal { width: 190px; height: 190px; margin: 0 auto 24px; border-radius: 34px; padding: 10px; }
+  .state .ev { color: var(--c2); font-weight: 600; font-size: 1.05rem; margin-bottom: 6px; }
+  .state h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.15; }
+  .state p.txt { margin: 12px auto 0; max-width: 32ch; color: var(--soft); font-size: 1.05rem; line-height: 1.5; }
+
+  footer { margin-top: auto; padding-top: 40px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: .88rem; color: var(--soft); }
+  footer img { width: 26px; height: 26px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="state" id="loading">A carregar…</p>
+
+  <section class="state" id="pending" hidden>
+    <div class="seal"><img class="brand-logo" src="logo.webp" alt=""></div>
+    <p class="ev" id="p-ev" hidden></p>
+    <h1>Resultados em breve</h1>
+    <p class="txt">Este troféu ainda não tem os dados do vencedor. Volte a aproximar o telemóvel daqui a alguns dias.</p>
+  </section>
+
+  <section class="state" id="empty" hidden>
+    <div class="seal"><img src="logo.webp" alt="PrismaPrint 3D"></div>
+    <h1>Troféus com memória</h1>
+    <p class="txt">Aproxime o telemóvel de um troféu PrismaPrint 3D para ver o vencedor, o evento e as fotos.</p>
+  </section>
+
+  <article id="trophy" hidden>
+    <header class="top">
+      <div class="seal"><img class="brand-logo" src="logo.webp" alt=""></div>
+      <p><strong id="ev-name"></strong><span id="ev-meta"></span></p>
+    </header>
+
+    <div class="hero">
+      <div class="blob" id="hero" tabindex="0" role="button" aria-label="Ampliar foto"><img id="hero-img" alt=""></div>
+      <div class="medal" id="medal"><b id="pos"></b><span>lugar</span></div>
+    </div>
+
+    <div class="winner">
+      <h1 id="w-name"></h1>
+      <p class="cat" id="w-cat"></p>
+      <p class="result" id="w-result" hidden></p>
+    </div>
+    <p class="msg" id="msg" hidden></p>
+
+    <section class="gallery" id="gallery" hidden>
+      <h2>Fotos do evento</h2>
+      <div class="grid" id="grid"></div>
+    </section>
+  </article>
+
+  <footer><img src="logo.webp" alt="">Troféu feito por PrismaPrint 3D</footer>
+</main>
+
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Foto ampliada">
+  <button class="close" id="close" type="button" aria-label="Fechar">×</button>
+  <img id="lb-img" alt="">
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var show = function (id) { $('loading').hidden = true; $(id).hidden = false; };
+  var HEX = /^#[0-9a-fA-F]{6}$/;
+  var SAFE_PATH = /^(logos|fotos)\/[A-Za-z0-9._\/-]+$/;
+
+  var id = (new URLSearchParams(location.search).get('id') || '').trim().toLowerCase();
+  if (!id) return show('empty');
+  if (!/^[a-z0-9]{4,20}$/.test(id)) return show('pending');
+
+  fetch('dados/' + id + '.json', { cache: 'no-cache' })
+    .then(function (r) { if (!r.ok) throw new Error('sem dados'); return r.json(); })
+    .then(render)
+    .catch(function () { show('pending'); });
+
+  function applyBrand(m, ev) {
+    if (!m) return;
+    var root = document.documentElement.style;
+    if (HEX.test(m.fundo || '')) { root.setProperty('--bg', m.fundo); $('theme-color').content = m.fundo; }
+    if (HEX.test(m.cor1 || '')) root.setProperty('--c1', m.cor1);
+    if (HEX.test(m.cor2 || '')) root.setProperty('--c2', m.cor2);
+    if (m.logo && SAFE_PATH.test(m.logo)) {
+      document.querySelectorAll('.brand-logo').forEach(function (im) { im.src = m.logo; im.alt = (ev && ev.nome) || ''; });
+      $('favicon').href = m.logo;
+    }
+  }
+
+  function render(d) {
+    var ev = (d && d.evento) || {};
+    applyBrand(d && d.marca, ev);
+    if (!d || d.publicado === false || !d.vencedor || !d.vencedor.nome) {
+      if (ev.nome) { $('p-ev').textContent = ev.nome; $('p-ev').hidden = false; document.title = ev.nome; }
+      return show('pending');
+    }
+    var w = d.vencedor;
+    var fotos = (Array.isArray(d.fotos) ? d.fotos : []).filter(function (f) { return SAFE_PATH.test(f); });
+
+    document.title = w.nome + ' · ' + (ev.nome || 'Troféu');
+    $('ev-name').textContent = ev.nome || '';
+    var meta = [];
+    if (ev.data) {
+      var dt = new Date(ev.data + 'T12:00:00');
+      meta.push(isNaN(dt) ? ev.data : dt.toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' }));
+    }
+    if (ev.local) meta.push(ev.local);
+    $('ev-meta').textContent = meta.join(', ');
+
+    var tipo = d.tipo === 'participacao' ? 'participacao' : 'podio';
+    var pos = parseInt(w.posicao, 10);
+    if (tipo === 'participacao') {
+      $('medal').classList.add('part');
+      $('medal').innerHTML = '<span class="pname">Participante</span>';
+    } else if (pos > 0) {
+      $('pos').textContent = pos + '.º';
+      var colors = { 1: 'var(--gold)', 2: 'var(--silver)', 3: 'var(--bronze)' };
+      $('medal').style.setProperty('--medal', colors[pos] || 'var(--c2)');
+    } else {
+      $('medal').hidden = true;
+    }
+
+    $('w-name').textContent = w.nome;
+    $('w-cat').textContent = w.categoria || '';
+    if (w.resultado) { $('w-result').textContent = w.resultado; $('w-result').hidden = false; }
+    if (d.mensagem) { $('msg').textContent = d.mensagem; $('msg').hidden = false; }
+
+    if (fotos.length) {
+      $('hero-img').src = fotos[0];
+      $('hero-img').alt = 'Foto de ' + w.nome;
+      var open0 = function () { openLb(fotos[0]); };
+      $('hero').addEventListener('click', open0);
+      $('hero').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open0(); } });
+    } else {
+      $('hero-img').src = $('favicon').href;
+      $('hero-img').style.objectFit = 'contain';
+      $('hero').style.background = '#fff';
+      $('hero').removeAttribute('role'); $('hero').removeAttribute('tabindex'); $('hero').style.cursor = 'default';
+    }
+
+    fotos.slice(1).forEach(function (src, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-label', 'Ampliar foto ' + (i + 2));
+      var im = document.createElement('img');
+      im.src = src; im.alt = ''; im.loading = 'lazy';
+      b.appendChild(im);
+      b.addEventListener('click', function () { openLb(src); });
+      $('grid').appendChild(b);
+    });
+    if (fotos.length > 1) $('gallery').hidden = false;
+    show('trophy');
+  }
+
+  var lastFocus = null;
+  function openLb(src) { lastFocus = document.activeElement; $('lb-img').src = src; $('lightbox').hidden = false; $('close').focus(); }
+  function closeLb() { $('lightbox').hidden = true; if (lastFocus) lastFocus.focus(); }
+  $('close').addEventListener('click', closeLb);
+  $('lightbox').addEventListener('click', function (e) { if (e.target === this) closeLb(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('lightbox').hidden) closeLb(); });
+})();
+</script>
+</body>
+</html>

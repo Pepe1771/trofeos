@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Gestor de trofeos · PrismaPrint 3D</title>
+<link rel="icon" href="logo.webp">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root { --navy:#09094F; --royal:#3856DA; --sky:#0099FE; --ice:#EAF0FF; --line:#CBD5F5; --text:#1B1D4A; --muted:#565B8C;
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+  *,*::before,*::after { box-sizing:inherit; }
+  html { background:var(--ice); }
+  body { margin:0; font-family:"Fredoka","Nunito","Segoe UI",system-ui,sans-serif; color:var(--text); background:var(--ice); }
+  header.app { background:var(--navy); color:#fff; padding:14px 20px; display:flex; align-items:center; gap:12px; }
+  header.app img { width:40px; height:40px; }
+  header.app h1 { margin:0; font-size:1.25rem; font-weight:600; }
+  main { max-width:900px; margin:0 auto; padding:20px 16px 60px; }
+  [hidden] { display:none !important; }
+
+  .tabs { display:flex; gap:8px; margin-bottom:18px; }
+  .tabs button { flex:1; }
+  .tabs button[aria-selected="false"] { background:#fff; color:var(--navy); box-shadow:inset 0 0 0 2px var(--line); }
+
+  .panel { background:#fff; border-radius:22px; padding:22px; box-shadow:0 4px 0 var(--line); }
+  .panel + .panel { margin-top:18px; }
+  h2 { margin:0 0 6px; font-size:1.3rem; font-weight:600; color:var(--navy); }
+  h3 { margin:24px 0 2px; font-size:1.1rem; font-weight:600; color:var(--navy); }
+  .intro { margin:0 0 16px; color:var(--muted); line-height:1.45; }
+  label { display:block; font-weight:500; margin:14px 0 6px; }
+  .sub { font-weight:400; color:var(--muted); font-size:.92rem; }
+  input[type=text], input[type=url], input[type=date], input[type=number], input[type=search], textarea, select {
+    width:100%; padding:11px 13px; border:2px solid var(--line); border-radius:12px; font:inherit; font-size:1rem; color:var(--text); background:#fff; }
+  textarea { min-height:86px; resize:vertical; }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--royal); }
+  .row { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:0 14px; }
+  .check { display:flex; gap:10px; align-items:flex-start; margin-top:18px; font-weight:400; line-height:1.4; }
+  .check input { width:22px; height:22px; margin-top:1px; flex:none; }
+
+  button { font:inherit; font-weight:600; font-size:1rem; border:0; border-radius:999px; padding:12px 20px; min-height:46px; background:var(--royal); color:#fff; cursor:pointer; }
+  button.secondary { background:#fff; color:var(--navy); box-shadow:inset 0 0 0 2px var(--line); }
+  button.danger { background:#fff; color:#A93226; box-shadow:inset 0 0 0 2px #F1C5BF; }
+  button.small { padding:6px 14px; min-height:34px; font-size:.9rem; }
+  button.link { background:none; color:var(--royal); padding:0; min-height:0; font-weight:500; text-decoration:underline; }
+  button:focus-visible { outline:3px solid var(--sky); outline-offset:2px; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+
+  .msg { margin-top:14px; padding:12px 14px; border-radius:12px; line-height:1.4; }
+  .msg.ok { background:#E3F6EC; color:#145C37; }
+  .msg.err { background:#FBE6E3; color:#7A2318; }
+
+  /* Lista de competiciones */
+  .toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
+  .toolbar .search { flex:1 1 260px; }
+  .comp-list { list-style:none; margin:16px 0 0; padding:0; }
+  .comp-list li { display:flex; align-items:center; gap:14px; padding:12px 0; border-top:1px solid var(--line); }
+  .comp-list li:first-child { border-top:0; }
+  .thumb { width:56px; height:56px; flex:none; border-radius:14px; display:grid; place-items:center; }
+  .thumb span { width:44px; height:44px; background:#fff; border-radius:10px; display:grid; place-items:center; padding:3px; }
+  .thumb img { max-width:100%; max-height:100%; }
+  .comp-info { flex:1; min-width:0; }
+  .comp-info strong { display:block; font-weight:600; font-size:1.05rem; }
+  .comp-info span { color:var(--muted); font-size:.93rem; }
+  .bar { height:6px; background:var(--ice); border-radius:99px; margin-top:6px; overflow:hidden; max-width:220px; }
+  .bar i { display:block; height:100%; background:var(--royal); }
+  .empty { padding:26px 0 8px; text-align:center; color:var(--muted); line-height:1.5; }
+
+  .found { margin-top:12px; padding:12px 14px; border-radius:12px; background:var(--ice); line-height:1.45; }
+
+  /* Detalle */
+  .detail-head { display:flex; gap:16px; align-items:center; }
+  .detail-head .thumb { width:84px; height:84px; border-radius:20px; }
+  .detail-head .thumb span { width:66px; height:66px; border-radius:14px; }
+  .table-wrap { overflow-x:auto; margin-top:16px; }
+  table { width:100%; border-collapse:collapse; font-size:.95rem; }
+  th, td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:500; }
+  td code { font-size:.95rem; background:var(--ice); padding:2px 6px; border-radius:6px; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:99px; font-size:.85rem; font-weight:500; }
+  .pill.pend { background:#FFF4D6; color:#7A5600; }
+  .pill.done { background:#E3F6EC; color:#145C37; }
+  .cell-actions { display:flex; gap:6px; }
+
+  .brand { display:grid; grid-template-columns:120px 1fr; gap:16px; align-items:start; }
+  .preview { width:120px; height:120px; border-radius:20px; display:grid; place-items:center; margin-top:14px; }
+  .preview div { width:84px; height:84px; background:#fff; border-radius:14px; padding:5px; box-shadow:0 4px 0 var(--pc1, var(--royal)); display:grid; place-items:center; }
+  .preview img { max-width:100%; max-height:100%; }
+  .colors { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  input[type=color] { width:100%; height:46px; border:2px solid var(--line); border-radius:12px; padding:3px; background:#fff; cursor:pointer; }
+  .thumbs { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .thumbs img { width:84px; height:84px; object-fit:cover; border-radius:10px; }
+  .thumbs .first { box-shadow:0 0 0 3px var(--royal); }
+  .cat-row { display:grid; grid-template-columns:1fr 92px 92px auto; gap:8px; align-items:end; margin-bottom:8px; }
+  .cat-row label { margin:0 0 4px; font-size:.85rem; color:var(--muted); }
+  .cat-row .rm { background:#fff; color:#A93226; box-shadow:inset 0 0 0 2px #F1C5BF; min-height:46px; padding:0 14px; }
+  @media (max-width:560px){ .cat-row{ grid-template-columns:1fr 1fr; } .cat-row .rm{ grid-column:1/-1; } }
+  .settings { margin-top:22px; padding-top:16px; border-top:1px solid var(--line); }
+  @media (max-width:560px) { .brand { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header class="app"><img src="logo.webp" alt=""><h1>Gestor de trofeos</h1></header>
+<main>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-comp" aria-selected="true">Competiciones</button>
+    <button role="tab" id="tab-fill" aria-selected="false">Rellenar trofeo</button>
+  </div>
+
+  <!-- ===== COMPETICIONES: LISTA ===== -->
+  <div id="v-list">
+    <section class="panel">
+      <div class="toolbar">
+        <h2 style="margin:0">Competiciones</h2>
+        <button type="button" id="new-btn">Nueva competición</button>
+      </div>
+      <label for="search">Buscar un código <span class="sub">(el que sale al leer una etiqueta)</span></label>
+      <input type="search" id="search" placeholder="Ej.: k7x2m9qa o el enlace completo" autocomplete="off">
+      <div id="found"></div>
+      <ul class="comp-list" id="comp-list"></ul>
+
+      <div class="settings">
+        <label for="base" style="margin-top:0">Dirección de la web de trofeos</label>
+        <input type="url" id="base" placeholder="https://trofeos.tudominio.pt/">
+        <div class="actions">
+          <button type="button" class="secondary small" id="export">Exportar copia de seguridad</button>
+          <button type="button" class="secondary small" id="import-btn">Importar copia</button>
+          <input type="file" id="import" accept=".json,application/json" hidden>
+        </div>
+        <p class="sub" style="margin-top:10px;line-height:1.4">Las competiciones se guardan en este navegador. Exporta una copia de vez en cuando y guárdala en tu ordenador (no la subas a GitHub, porque contiene todos los códigos).</p>
+        <div id="settings-msg"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== COMPETICIONES: NUEVA ===== -->
+  <div id="v-new" hidden>
+    <section class="panel">
+      <button type="button" class="link" data-back>← Volver a competiciones</button>
+      <h2 style="margin-top:12px">Nueva competición</h2>
+      <p class="intro">Se crea un código único por cada pieza (trofeo o medalla), según las categorías y puestos.</p>
+
+      <label for="n-name">Nombre de la competición</label>
+      <input type="text" id="n-name" placeholder="Encontro de Capoeira Batuqueiro">
+      <div class="row">
+        <div><label for="n-date">Fecha</label><input type="date" id="n-date"></div>
+        <div><label for="n-place">Lugar <span class="sub">(opcional)</span></label><input type="text" id="n-place" placeholder="Viana do Castelo"></div>
+      </div>
+      <h3>Piezas por categoría</h3>
+      <p class="intro" style="margin:0 0 6px">Para cada categoría indica cuántos trofeos de podio y cuántas medallas de participación.</p>
+      <div id="cat-rows"></div>
+      <button type="button" class="link" id="add-cat">+ Añadir categoría</button>
+
+      <h3>Cliente</h3>
+      <p class="intro" style="margin:0">El logo y los colores que verá quien lea los trofeos.</p>
+      <div class="brand">
+        <div class="preview" id="preview"><div><img id="prev-logo" src="logo.webp" alt=""></div></div>
+        <div>
+          <label for="n-brand">Plantilla del cliente</label>
+          <select id="n-brand"></select>
+          <div id="new-client" hidden>
+            <label for="n-client">Nombre del cliente</label>
+            <input type="text" id="n-client" placeholder="Centro Cultural Capoeira Batuqueiro">
+            <label for="n-logo">Logo <span class="sub">(PNG o JPG)</span></label>
+            <input type="file" id="n-logo" accept="image/png,image/jpeg,image/webp">
+          </div>
+          <div class="colors">
+            <div><label for="n-bg">Fondo</label><input type="color" id="n-bg" value="#09094f"></div>
+            <div><label for="n-c1">Principal</label><input type="color" id="n-c1" value="#3856da"></div>
+            <div><label for="n-c2">Acento</label><input type="color" id="n-c2" value="#0099fe"></div>
+          </div>
+        </div>
+      </div>
+      <div class="actions"><button type="button" id="create">Crear competición</button></div>
+      <div id="new-msg"></div>
+    </section>
+  </div>
+
+  <!-- ===== COMPETICIONES: DETALLE ===== -->
+  <div id="v-detail" hidden>
+    <section class="panel">
+      <button type="button" class="link" data-back>← Volver a competiciones</button>
+      <div class="detail-head" style="margin-top:14px">
+        <div class="thumb" id="d-thumb"><span><img id="d-logo" alt=""></span></div>
+        <div><h2 id="d-name" style="margin:0"></h2><span class="sub" id="d-meta"></span></div>
+      </div>
+      <div class="actions">
+        <button type="button" id="d-zip">Descargar paquete para GitHub (.zip)</button>
+        <button type="button" class="secondary" id="d-client">Enviar al cliente (atribución)</button>
+        <button type="button" class="secondary" id="d-import-btn">Importar atribuciones del cliente</button>
+        <input type="file" id="d-import" accept=".json,application/json" hidden>
+        <button type="button" class="secondary" id="d-csv">Lista (CSV)</button>
+        <button type="button" class="secondary" id="d-add-btn">Añadir piezas</button>
+      </div>
+      <div id="d-add" hidden>
+        <p class="intro" style="margin:6px 0">Se añaden al final, con los siguientes números correlativos.</p>
+        <div id="a-rows"></div>
+        <button type="button" class="link" id="a-add-cat">+ Añadir categoría</button>
+        <div class="actions"><button type="button" id="a-go">Añadir piezas</button></div>
+      </div>
+      <div id="d-msg"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pieza</th><th>Código</th><th>Estado</th><th>Etiqueta NFC y datos</th></tr></thead>
+          <tbody id="d-body"></tbody>
+        </table>
+      </div>
+      <div class="actions" style="margin-top:26px"><button type="button" class="danger small" id="d-del">Eliminar competición</button></div>
+    </section>
+  </div>
+
+  <!-- ===== RELLENAR ===== -->
+  <div id="v-fill" hidden>
+    <section class="panel">
+      <h2>Rellenar un trofeo</h2>
+      <p class="intro">Elige la competición y la pieza, rellena los datos del ganador y descarga el .zip para subirlo a GitHub.</p>
+
+      <div class="row">
+        <div><label for="f-comp">Competición</label><select id="f-comp"></select></div>
+        <div><label for="f-piece">Pieza</label><select id="f-piece"></select></div>
+      </div>
+
+      <label for="f-name">Nombre del ganador</label>
+      <input type="text" id="f-name" placeholder="Marta Ferreira">
+      <div class="row">
+        <div><label for="f-cat">Categoría <span class="sub">(opcional)</span></label><input type="text" id="f-cat"></div>
+        <div id="pos-field"><label for="f-pos">Puesto</label><input type="number" id="f-pos" min="1" max="99"></div>
+      </div>
+      <label for="f-res">Resultado <span class="sub">(opcional)</span></label>
+      <input type="text" id="f-res" placeholder="6,5 / 7 pontos">
+      <label for="f-msg">Mensaje <span class="sub">(opcional, aparece tal cual lo escribas, en portugués)</span></label>
+      <textarea id="f-msg" placeholder="Parabéns pela vitória!"></textarea>
+
+      <label for="f-photos">Fotos <span class="sub">(la primera es la principal; se reducen automáticamente)</span></label>
+      <input type="file" id="f-photos" accept="image/*" multiple>
+      <div class="thumbs" id="thumbs"></div>
+      <p class="sub" id="keep-photos" hidden></p>
+
+      <label class="check"><input type="checkbox" id="f-consent">
+        <span>Tengo el consentimiento del ganador para publicar su nombre y fotos (o el de su padre, madre o tutor si es menor de edad).</span></label>
+      <label class="check"><input type="checkbox" id="f-pub" checked>
+        <span>Publicado. Desmárcalo para ocultar el trofeo: mostrará «Resultados em breve».</span></label>
+
+      <div class="actions"><button type="button" id="f-zip">Descargar paquete (.zip)</button></div>
+      <div id="fill-msg"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'pp-competicoes-v1';
+  var db = { base: '', comps: [] };
+  try { var raw = localStorage.getItem(KEY); if (raw) db = JSON.parse(raw); } catch (e) {}
+  if (!Array.isArray(db.comps)) db.comps = [];
+  if (!Array.isArray(db.brands)) db.brands = [
+    { id: 'batuqueiro', name: 'Centro Cultural Capoeira Batuqueiro', logoData: null,
+      marca: { fundo: '#141410', cor1: '#e1030e', cor2: '#ca9a2e', logo: 'logos/batuqueiro.jpg' } }
+  ];
+  var DEFAULT_BRAND = { id: '', name: 'PrismaPrint 3D', logoData: null, marca: { fundo: '#09094f', cor1: '#3856da', cor2: '#0099fe' } };
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(db)); return true; }
+    catch (e) { alert('El navegador no tiene espacio para guardar más datos. Exporta una copia de seguridad.'); return false; }
+  }
+  function msg(el, text, ok) { $(el).innerHTML = ''; if (!text) return; var d = document.createElement('div'); d.className = 'msg ' + (ok ? 'ok' : 'err'); d.textContent = text; $(el).appendChild(d); }
+  function el(tag, props, kids) { var e = document.createElement(tag); Object.assign(e, props || {}); (kids || []).forEach(function (k) { e.appendChild(typeof k === 'string' ? document.createTextNode(k) : k); }); return e; }
+
+  var ALPHA = 'abcdefghjkmnpqrstuvwxyz23456789';
+  function rnd(len) { var a = new Uint32Array(len), s = ''; crypto.getRandomValues(a); for (var i = 0; i < len; i++) s += ALPHA[a[i] % ALPHA.length]; return s; }
+  function allCodes() { var u = {}; db.comps.forEach(function (c) { c.codes.forEach(function (k) { u[k.code] = 1; }); }); return u; }
+  function slug(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'competicion'; }
+  function baseUrl() { var b = (db.base || '').trim(); if (b && !/\/$/.test(b)) b += '/'; return b; }
+  function urlFor(code) { return (baseUrl() || 'https://…/') + '?id=' + code; }
+  function fmtDate(d) { if (!d) return ''; var x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  function compById(id) { return db.comps.find(function (c) { return c.id === id; }); }
+  function download(blob, name) { var a = el('a', { href: URL.createObjectURL(blob), download: name }); document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000); }
+  function copy(text, btn) {
+    var done = function () { var t = btn.textContent; btn.textContent = 'Copiado ✓'; setTimeout(function () { btn.textContent = t; }, 1500); };
+    var fb = function () { var ta = el('textarea', { value: text }); document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} ta.remove(); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fb); else fb();
+  }
+  function makeCodes(specs, startUsed, startNum) {
+    // specs: [{cat, podio, part}]
+    var used = startUsed || allCodes(), out = [], num = startNum || 1;
+    var pad = function (x) { return ('000' + x).slice(-4); };
+    specs.forEach(function (sp) {
+      for (var p = 1; p <= sp.podio; p++) { var c; do { c = rnd(8); } while (used[c]); used[c] = 1; out.push({ code: c, category: sp.cat, tipo: 'podio', place: p, numero: pad(num++), status: 'pend', winner: '' }); }
+      for (var q = 0; q < sp.part; q++) { var c2; do { c2 = rnd(8); } while (used[c2]); used[c2] = 1; out.push({ code: c2, category: sp.cat, tipo: 'participacao', place: null, numero: pad(num++), status: 'pend', winner: '' }); }
+    });
+    return out;
+  }
+  function nextNum(comp) { var m = 0; comp.codes.forEach(function (k) { var n = parseInt(k.numero, 10); if (n > m) m = n; }); return m + 1; }
+  function parseCats(t) { var c = t.split('\n').map(function (s) { return s.trim(); }).filter(Boolean); return c.length ? c : ['General']; }
+  function pieceName(k) { var base = 'Troféu ' + (k.numero || '') + ' — '; return base + (k.tipo === 'participacao' ? 'Participação' : (k.place + '.º lugar')) + (k.category && k.category !== 'General' ? ' · ' + k.category : ''); }
+  function thumbFill(box, img, comp) {
+    box.style.background = (comp.marca && comp.marca.fundo) || '#09094f';
+    img.src = comp.logoData || (comp.marca && comp.marca.logo) || 'logo.webp';
+    img.onerror = function () { img.onerror = null; img.src = 'logo.webp'; };
+  }
+
+  /* ---------- navegación ---------- */
+  var views = ['v-list', 'v-new', 'v-detail', 'v-fill'];
+  function go(v) {
+    views.forEach(function (x) { $(x).hidden = x !== v; });
+    var fill = v === 'v-fill';
+    $('tab-comp').setAttribute('aria-selected', !fill); $('tab-fill').setAttribute('aria-selected', fill);
+    window.scrollTo(0, 0);
+  }
+  $('tab-comp').onclick = function () { renderList(); go('v-list'); };
+  $('tab-fill').onclick = function () { openFill(); };
+  document.querySelectorAll('[data-back]').forEach(function (b) { b.onclick = function () { renderList(); go('v-list'); }; });
+
+  /* ---------- lista ---------- */
+  $('base').value = db.base || '';
+  $('base').addEventListener('change', function () { db.base = this.value.trim(); save(); });
+
+  function renderList() {
+    var ul = $('comp-list'); ul.innerHTML = '';
+    if (!db.comps.length) { ul.appendChild(el('li', { className: 'empty' }, ['Todavía no hay competiciones. Crea la primera con «Nueva competición».'])); return; }
+    db.comps.slice().sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); }).forEach(function (c) {
+      var done = c.codes.filter(function (k) { return k.status === 'done'; }).length;
+      var img = el('img', { alt: '' }), box = el('div', { className: 'thumb' }, [el('span', {}, [img])]); thumbFill(box, img, c);
+      var bar = el('div', { className: 'bar' }, [el('i')]); bar.firstChild.style.width = (c.codes.length ? done / c.codes.length * 100 : 0) + '%';
+      var meta = [fmtDate(c.date), c.place].filter(Boolean).join(' · ');
+      var info = el('div', { className: 'comp-info' }, [el('strong', { textContent: c.name }), el('span', { textContent: (meta ? meta + ' — ' : '') + c.codes.length + ' piezas, ' + done + ' rellenadas' }), bar]);
+      var open = el('button', { type: 'button', className: 'secondary small', textContent: 'Abrir' }); open.onclick = function () { openDetail(c.id); };
+      ul.appendChild(el('li', {}, [box, info, open]));
+    });
+  }
+
+  $('search').addEventListener('input', function () {
+    var q = this.value.trim().toLowerCase(), m = q.match(/id=([a-z0-9]+)/); if (m) q = m[1];
+    var out = $('found'); out.innerHTML = '';
+    if (q.length < 4) return;
+    var hit = null;
+    db.comps.some(function (c) { var k = c.codes.find(function (k) { return k.code === q; }); if (k) { hit = { c: c, k: k }; return true; } });
+    if (!hit) { out.appendChild(el('div', { className: 'found', textContent: 'Ese código no está en ninguna competición guardada en este navegador.' })); return; }
+    var b = el('button', { type: 'button', className: 'link', textContent: 'Abrir competición' }); b.onclick = function () { openDetail(hit.c.id); };
+    out.appendChild(el('div', { className: 'found' }, [
+      el('strong', { textContent: pieceName(hit.k) }), ' de «' + hit.c.name + '»' + (hit.k.status === 'done' ? ' — ganador: ' + hit.k.winner : ' — pendiente') + '. ', b
+    ]));
+  });
+
+  /* ---------- nueva ---------- */
+  function catRow(cat, podio, part) {
+    var wrap = el('div', { className: 'cat-row' });
+    var c = el('input', { type: 'text', value: cat || '', placeholder: 'Categoría' });
+    var pd = el('input', { type: 'number', min: '0', max: '20', value: podio == null ? 3 : podio });
+    var pt = el('input', { type: 'number', min: '0', max: '200', value: part == null ? 0 : part });
+    var rm = el('button', { type: 'button', className: 'rm', textContent: '×', title: 'Quitar' });
+    rm.onclick = function () { wrap.remove(); };
+    wrap.appendChild(el('div', {}, [el('label', { textContent: 'Categoría' }), c]));
+    wrap.appendChild(el('div', {}, [el('label', { textContent: 'Pódio' }), pd]));
+    wrap.appendChild(el('div', {}, [el('label', { textContent: 'Participación' }), pt]));
+    wrap.appendChild(rm);
+    wrap._get = function () { return { cat: c.value.trim() || 'General', podio: Math.max(0, parseInt(pd.value, 10) || 0), part: Math.max(0, parseInt(pt.value, 10) || 0) }; };
+    return wrap;
+  }
+  function readCatRows() {
+    var rows = Array.prototype.map.call($('cat-rows').children, function (r) { return r._get(); });
+    return rows.filter(function (r) { return r.podio + r.part > 0; });
+  }
+  $('add-cat').onclick = function () { $('cat-rows').appendChild(catRow('', 3, 0)); };
+
+  $('new-btn').onclick = function () {
+    ['n-name', 'n-date', 'n-place'].forEach(function (k) { $(k).value = ''; });
+    $('n-logo').value = ''; $('n-client').value = '';
+    $('cat-rows').innerHTML = ''; $('cat-rows').appendChild(catRow('', 3, 0));
+    brandOptions(db.brands.length ? db.brands[db.brands.length - 1].id : ''); msg('new-msg');
+    go('v-new'); $('n-name').focus();
+  };
+  function updatePreview() { $('preview').style.background = $('n-bg').value; $('preview').style.setProperty('--pc1', $('n-c1').value); }
+  ['n-bg', 'n-c1', 'n-c2'].forEach(function (k) { $(k).addEventListener('input', updatePreview); });
+  $('n-logo').onchange = function () { var f = this.files[0]; $('prev-logo').src = f ? URL.createObjectURL(f) : 'logo.webp'; };
+
+  function brandById(id) { return db.brands.find(function (b) { return b.id === id; }); }
+  function brandOptions(sel) {
+    var s = $('n-brand'); s.innerHTML = '';
+    s.appendChild(el('option', { value: '', textContent: 'PrismaPrint 3D (por defecto)' }));
+    db.brands.forEach(function (b) { s.appendChild(el('option', { value: b.id, textContent: b.name })); });
+    s.appendChild(el('option', { value: '__new', textContent: '+ Nuevo cliente…' }));
+    s.value = sel || ''; applyBrandChoice();
+  }
+  function applyBrandChoice() {
+    var v = $('n-brand').value, isNew = v === '__new';
+    $('new-client').hidden = !isNew;
+    var b = isNew ? null : (brandById(v) || DEFAULT_BRAND);
+    if (b) {
+      $('n-bg').value = b.marca.fundo; $('n-c1').value = b.marca.cor1; $('n-c2').value = b.marca.cor2;
+      var im = $('prev-logo'); im.onerror = function () { im.onerror = null; im.src = 'logo.webp'; };
+      im.src = b.logoData || b.marca.logo || 'logo.webp';
+    } else {
+      var f = $('n-logo').files[0]; $('prev-logo').src = f ? URL.createObjectURL(f) : 'logo.webp';
+    }
+    updatePreview();
+  }
+  $('n-brand').onchange = applyBrandChoice;
+
+  function logoData(file) {
+    return new Promise(function (res, rej) {
+      var img = new Image();
+      img.onload = function () {
+        var s = Math.min(1, 480 / Math.max(img.width, img.height));
+        var c = el('canvas', { width: Math.round(img.width * s), height: Math.round(img.height * s) });
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/png'));
+      };
+      img.onerror = function () { rej(); };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  $('create').onclick = function () {
+    var name = $('n-name').value.trim();
+    if (!name) return msg('new-msg', 'Escribe el nombre de la competición.', false);
+    var specs = readCatRows();
+    if (!specs.length) return msg('new-msg', 'Añade al menos una categoría con piezas de podio o de participación.', false);
+    var id = rnd(6), choice = $('n-brand').value, isNew = choice === '__new';
+    var colors = { fundo: $('n-bg').value, cor1: $('n-c1').value, cor2: $('n-c2').value };
+    var comp = {
+      id: id, name: name, date: $('n-date').value, place: $('n-place').value.trim(), created: new Date().toISOString(),
+      brandId: '', marca: colors, logoData: null, codes: makeCodes(specs)
+    };
+    var finish = function () { db.comps.push(comp); if (save()) openDetail(id, 'Competición creada con ' + comp.codes.length + ' piezas. Descarga el paquete y súbelo a GitHub antes del evento.'); };
+
+    if (!isNew) {
+      var b = brandById(choice);
+      if (b) {
+        comp.brandId = b.id; comp.logoData = b.logoData;
+        if (b.marca.logo) colors.logo = b.marca.logo;
+        b.marca.fundo = colors.fundo; b.marca.cor1 = colors.cor1; b.marca.cor2 = colors.cor2; // recuerda los colores ajustados
+      }
+      return finish();
+    }
+    var client = $('n-client').value.trim(), file = $('n-logo').files[0];
+    if (!client) return msg('new-msg', 'Escribe el nombre del nuevo cliente.', false);
+    if (!file) return msg('new-msg', 'Sube el logo del nuevo cliente.', false);
+    logoData(file).then(function (d) {
+      var bid = slug(client) + '-' + rnd(4);
+      colors.logo = 'logos/' + bid + '.png';
+      db.brands.push({ id: bid, name: client, logoData: d, marca: Object.assign({}, colors) });
+      comp.brandId = bid; comp.logoData = d; finish();
+    }).catch(function () { msg('new-msg', 'No se pudo leer el logo. Prueba con un PNG o JPG.', false); });
+  };
+
+  /* ---------- detalle ---------- */
+  var current = null;
+  function openDetail(id, note) {
+    current = compById(id); if (!current) return;
+    $('d-name').textContent = current.name;
+    $('d-meta').textContent = [fmtDate(current.date), current.place, 'ref. ' + current.id].filter(Boolean).join(' · ');
+    thumbFill($('d-thumb'), $('d-logo'), current);
+    $('d-add').hidden = true;
+    renderDetail(); msg('d-msg', note || '', true); go('v-detail');
+  }
+  function renderDetail() {
+    var tb = $('d-body'); tb.innerHTML = '';
+    current.codes.forEach(function (k) {
+      var stText, stCls;
+      if (k.status === 'done') { stText = 'Publicado' + (k.winner ? ': ' + k.winner : ''); stCls = 'done'; }
+      else if (k.pending) { stText = 'Del cliente: ' + k.pending.nome + ' (falta foto)'; stCls = 'pend'; }
+      else { stText = 'Pendiente'; stCls = 'pend'; }
+      var st = el('span', { className: 'pill ' + stCls, textContent: stText });
+      var cp = el('button', { type: 'button', className: 'secondary small', textContent: 'Copiar enlace', title: urlFor(k.code) }); cp.onclick = function () { copy(urlFor(k.code), cp); };
+      var fl = el('button', { type: 'button', className: 'small', textContent: k.status === 'done' ? 'Editar' : 'Rellenar' }); fl.onclick = function () { openFill(current.id, k.code); };
+      tb.appendChild(el('tr', {}, [el('td', { textContent: pieceName(k) }), el('td', {}, [el('code', { textContent: k.code })]), el('td', {}, [st]), el('td', {}, [el('div', { className: 'cell-actions' }, [cp, fl])])]));
+    });
+  }
+  $('d-add-btn').onclick = function () {
+    $('d-add').hidden = !$('d-add').hidden;
+    if (!$('d-add').hidden) { $('a-rows').innerHTML = ''; $('a-rows').appendChild(catRow('', 0, 0)); }
+  };
+  $('a-add-cat').onclick = function () { $('a-rows').appendChild(catRow('', 0, 0)); };
+  $('a-go').onclick = function () {
+    var specs = Array.prototype.map.call($('a-rows').children, function (r) { return r._get(); }).filter(function (r) { return r.podio + r.part > 0; });
+    if (!specs.length) return msg('d-msg', 'Indica cuántas piezas de podio o participación añadir.', false);
+    var added = makeCodes(specs, allCodes(), nextNum(current));
+    current.codes = current.codes.concat(added); save(); $('d-add').hidden = true; renderDetail();
+    msg('d-msg', 'Se han añadido ' + added.length + ' piezas. Descarga el paquete otra vez y súbelo: solo incluye las piezas pendientes, así que no borra a los ganadores.', true);
+  };
+  $('d-del').onclick = function () {
+    if (!confirm('¿Eliminar «' + current.name + '» de este gestor? Los trofeos ya subidos a GitHub seguirán funcionando, pero perderás la lista de códigos si no tienes copia.')) return;
+    db.comps = db.comps.filter(function (c) { return c !== current; }); save(); renderList(); go('v-list');
+  };
+  $('d-csv').onclick = function () {
+    var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
+    var lines = [['Competicion', 'No', 'Tipo', 'Categoria', 'Puesto', 'Codigo', 'Estado', 'Ganador', 'Enlace'].map(q).join(';')];
+    current.codes.forEach(function (k) { lines.push([current.name, k.numero, k.tipo === 'participacao' ? 'Participacion' : 'Podio', k.category, k.tipo === 'participacao' ? '' : k.place, k.code, k.status === 'done' ? 'Rellenado' : 'Pendiente', k.winner, urlFor(k.code)].map(q).join(';')); });
+    download(new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'codigos-' + slug(current.name) + '.csv');
+  };
+
+  $('d-client').onclick = function () {
+    var out = {
+      id: current.id, nome: current.name, data: current.date || '', local: current.place || '',
+      marca: current.marca,
+      pecas: current.codes.map(function (k) { return { code: k.code, numero: k.numero, tipo: k.tipo || 'podio', categoria: k.category === 'General' ? '' : k.category, lugar: k.place }; })
+    };
+    download(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }), 'competicao-' + slug(current.name) + '.json');
+    var link = (baseUrl() || 'https://.../') + 'atribuir.html';
+    msg('d-msg', 'Archivo del cliente descargado. Enviaselo junto con este enlace para que atribuya los trofeos desde el movil: ' + link, true);
+  };
+
+  $('d-import-btn').onclick = function () { $('d-import').click(); };
+  $('d-import').onchange = function () {
+    var f = this.files[0]; this.value = ''; if (!f) return;
+    f.text().then(function (t) {
+      var d = JSON.parse(t);
+      if (!d || !Array.isArray(d.atribuicoes)) throw 0;
+      var byCode = {}; current.codes.forEach(function (k) { byCode[k.code] = k; });
+      var byNum = {}; current.codes.forEach(function (k) { byNum[k.numero] = k; });
+      var n = 0;
+      d.atribuicoes.forEach(function (a) {
+        var k = byCode[a.code] || byNum[a.numero];
+        if (!k || !a.nome) return;
+        k.pending = { nome: a.nome, posicao: a.posicao || null };
+        n++;
+      });
+      save(); renderDetail();
+      msg('d-msg', 'Importadas ' + n + ' atribuciones. Ahora, en cada pieza marcada como pendiente de publicar, pulsa Rellenar para anadir la foto y publicar.', true);
+    }).catch(function () { msg('d-msg', 'Ese archivo no es una lista de atribuciones valida.', false); });
+  };
+  function dataUrlToBlob(d) { var p = d.split(','), b = atob(p[1]), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return new Blob([a], { type: 'image/png' }); }
+  function baseRecord(comp, k) {
+    return { id: k.code, tipo: k.tipo || 'podio', numero: k.numero || '', publicado: false, marca: comp.marca,
+      evento: { nome: comp.name, data: comp.date || '', local: comp.place || '' },
+      vencedor: { nome: '', posicao: k.tipo === 'participacao' ? null : k.place, categoria: k.category === 'General' ? '' : k.category, resultado: '' },
+      mensagem: '', fotos: [] };
+  }
+  $('d-zip').onclick = function () {
+    if (typeof JSZip === 'undefined') return msg('d-msg', 'No se pudo cargar el generador de .zip. Comprueba tu conexión a internet y recarga la página.', false);
+    if (!/^https:\/\//.test(baseUrl())) return msg('d-msg', 'Antes, escribe la dirección de tu web de trofeos (abajo, en la lista de competiciones).', false);
+    var pend = current.codes.filter(function (k) { return k.status !== 'done'; });
+    if (!pend.length) return msg('d-msg', 'Todas las piezas están rellenadas: no hay nada pendiente que subir.', true);
+    var zip = new JSZip();
+    if (current.logoData && current.marca.logo) zip.file(current.marca.logo, dataUrlToBlob(current.logoData));
+    pend.forEach(function (k) { zip.file('dados/' + k.code + '.json', JSON.stringify(baseRecord(current, k), null, 2)); });
+    zip.generateAsync({ type: 'blob' }).then(function (b) {
+      download(b, 'competicion-' + slug(current.name) + '.zip');
+      msg('d-msg', 'Paquete descargado con ' + pend.length + ' piezas pendientes. Descomprímelo y sube sus carpetas a GitHub: las etiquetas mostrarán el logo con «Resultados em breve».', true);
+    });
+  };
+
+  /* ---------- rellenar ---------- */
+  var fillComp = null, fillCode = null, keepPhotos = [];
+  function fillCompOptions(sel) {
+    var s = $('f-comp'); s.innerHTML = '';
+    if (!db.comps.length) { s.appendChild(el('option', { value: '', textContent: 'No hay competiciones' })); return; }
+    db.comps.forEach(function (c) { s.appendChild(el('option', { value: c.id, textContent: c.name + (c.date ? ' (' + fmtDate(c.date) + ')' : '') })); });
+    if (sel) s.value = sel;
+  }
+  function fillPieceOptions(code) {
+    var s = $('f-piece'); s.innerHTML = ''; fillComp = compById($('f-comp').value);
+    if (!fillComp) return;
+    fillComp.codes.forEach(function (k) { s.appendChild(el('option', { value: k.code, textContent: pieceName(k) + ' — ' + k.code + (k.status === 'done' ? ' (rellenado)' : '') })); });
+    if (code) s.value = code;
+    loadPiece();
+  }
+  function loadPiece() {
+    fillCode = $('f-piece').value;
+    var k = fillComp && fillComp.codes.find(function (x) { return x.code === fillCode; });
+    var d = (k && k.data) || {};
+    var pend = k && k.pending;
+    var isPart = k && k.tipo === 'participacao';
+    $('f-name').value = d.nome || (pend ? pend.nome : '');
+    $('f-res').value = d.resultado || ''; $('f-msg').value = d.mensagem || '';
+    $('f-cat').value = d.categoria != null ? d.categoria : (k && k.category !== 'General' ? k.category : '');
+    $('f-pos').value = isPart ? '' : (d.posicao || (pend && pend.posicao) || (k ? k.place : ''));
+    $('pos-field').style.display = isPart ? 'none' : '';
+    $('f-consent').checked = !!d.nome; $('f-pub').checked = d.publicado !== false;
+    keepPhotos = d.fotos || []; $('f-photos').value = ''; $('thumbs').innerHTML = '';
+    var note = $('keep-photos');
+    if (keepPhotos.length) { note.hidden = false; note.textContent = 'Este trofeo ya tiene ' + keepPhotos.length + ' fotos subidas. Si no eliges fotos nuevas, se mantienen.'; }
+    else if (pend) { note.hidden = false; note.textContent = 'Datos enviados por el cliente. Añade la foto y publica.'; }
+    else { note.hidden = true; }
+    msg('fill-msg');
+  }
+  function openFill(compId, code) {
+    fillCompOptions(compId || (current && current.id));
+    fillPieceOptions(code);
+    go('v-fill');
+  }
+  $('f-comp').onchange = function () { fillPieceOptions(); };
+  $('f-piece').onchange = loadPiece;
+  $('f-photos').onchange = function () {
+    var t = $('thumbs'); t.innerHTML = '';
+    Array.prototype.forEach.call(this.files, function (f, i) { t.appendChild(el('img', { src: URL.createObjectURL(f), className: i === 0 ? 'first' : '' })); });
+  };
+  function resize(file) {
+    return new Promise(function (res, rej) {
+      var img = new Image();
+      img.onload = function () {
+        var s = Math.min(1, 1600 / Math.max(img.width, img.height));
+        var c = el('canvas', { width: Math.round(img.width * s), height: Math.round(img.height * s) });
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(function (b) { b ? res(b) : rej(new Error(file.name)); }, 'image/jpeg', 0.82);
+      };
+      img.onerror = function () { rej(new Error(file.name)); };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  $('f-zip').onclick = function () {
+    var k = fillComp && fillComp.codes.find(function (x) { return x.code === fillCode; });
+    if (!k) return msg('fill-msg', 'Elige una competición y una pieza.', false);
+    if (!$('f-name').value.trim()) return msg('fill-msg', 'Falta el nombre del ganador.', false);
+    if (!$('f-consent').checked) return msg('fill-msg', 'Marca la casilla de consentimiento antes de publicar datos y fotos de una persona.', false);
+    if (typeof JSZip === 'undefined') return msg('fill-msg', 'No se pudo cargar el generador de .zip. Comprueba tu conexión a internet y recarga la página.', false);
+
+    var btn = this; btn.disabled = true; btn.textContent = 'Preparando fotos…';
+    var zip = new JSZip(), stamp = Date.now().toString(36), files = Array.prototype.slice.call($('f-photos').files);
+    Promise.all(files.map(resize)).then(function (blobs) {
+      var fotos = blobs.length ? blobs.map(function (b, i) { var p = 'fotos/' + k.code + '/' + stamp + '-' + (i + 1) + '.jpg'; zip.file(p, b); return p; }) : keepPhotos;
+      var rec = baseRecord(fillComp, k);
+      rec.publicado = $('f-pub').checked; rec.consentimento = true;
+      var isPart = k.tipo === 'participacao';
+      rec.vencedor = { nome: $('f-name').value.trim(), posicao: isPart ? null : (parseInt($('f-pos').value, 10) || null), categoria: $('f-cat').value.trim(), resultado: $('f-res').value.trim() };
+      rec.mensagem = $('f-msg').value.trim(); rec.fotos = fotos;
+      if (fillComp.logoData && fillComp.marca.logo) zip.file(fillComp.marca.logo, dataUrlToBlob(fillComp.logoData));
+      zip.file('dados/' + k.code + '.json', JSON.stringify(rec, null, 2));
+      k.status = 'done'; k.winner = rec.vencedor.nome; delete k.pending;
+      k.data = { nome: rec.vencedor.nome, posicao: rec.vencedor.posicao, categoria: rec.vencedor.categoria, resultado: rec.vencedor.resultado, mensagem: rec.mensagem, fotos: fotos, publicado: rec.publicado };
+      save();
+      return zip.generateAsync({ type: 'blob' });
+    }).then(function (blob) {
+      download(blob, 'trofeo-' + k.code + '.zip');
+      fillPieceOptions(k.code);
+      msg('fill-msg', 'Paquete descargado y pieza marcada como rellenada. Descomprímelo y sube sus carpetas a GitHub.', true);
+    }).catch(function (e) {
+      msg('fill-msg', 'No se pudo procesar una de las fotos' + (e && e.message ? ' (' + e.message + ')' : '') + '. Prueba con una imagen JPG o PNG.', false);
+    }).then(function () { btn.disabled = false; btn.textContent = 'Descargar paquete (.zip)'; });
+  };
+
+  /* ---------- copia de seguridad ---------- */
+  $('export').onclick = function () {
+    download(new Blob([JSON.stringify(db, null, 1)], { type: 'application/json' }), 'gestor-trofeos-copia-' + new Date().toISOString().slice(0, 10) + '.json');
+  };
+  $('import-btn').onclick = function () { $('import').click(); };
+  $('import').onchange = function () {
+    var f = this.files[0]; this.value = ''; if (!f) return;
+    f.text().then(function (t) {
+      var d = JSON.parse(t); if (!d || !Array.isArray(d.comps)) throw 0;
+      var have = {}; db.comps.forEach(function (c) { have[c.id] = 1; });
+      var added = d.comps.filter(function (c) { return !have[c.id]; });
+      db.comps = db.comps.concat(added); if (!db.base && d.base) { db.base = d.base; $('base').value = d.base; }
+      var hb = {}; db.brands.forEach(function (b) { hb[b.id] = 1; });
+      (d.brands || []).forEach(function (b) { if (!hb[b.id]) db.brands.push(b); });
+      save(); renderList();
+      msg('settings-msg', 'Copia importada: ' + added.length + ' competiciones añadidas.', true);
+    }).catch(function () { msg('settings-msg', 'Ese archivo no es una copia de seguridad del gestor.', false); });
+  };
+
+  renderList();
+})();
+</script>
+</body>
+</html>

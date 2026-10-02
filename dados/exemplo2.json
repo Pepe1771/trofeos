@@ -1,0 +1,14 @@
+{
+  "id": "exemplo2",
+  "publicado": false,
+  "marca": {
+    "logo": "logos/batuqueiro.jpg",
+    "fundo": "#141410",
+    "cor1": "#E1030E",
+    "cor2": "#CA9A2E"
+  },
+  "evento": { "nome": "Encontro de Capoeira Batuqueiro", "data": "2026-09-20", "local": "Viana do Castelo" },
+  "vencedor": { "nome": "", "posicao": 2, "categoria": "Adultos", "resultado": "" },
+  "mensagem": "",
+  "fotos": []
+}

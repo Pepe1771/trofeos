@@ -1,0 +1,30 @@
+{
+  "id": "exemplo1",
+  "publicado": true,
+  "consentimento": true,
+  "marca": {
+    "logo": "logos/batuqueiro.jpg",
+    "fundo": "#141410",
+    "cor1": "#E1030E",
+    "cor2": "#CA9A2E"
+  },
+  "evento": {
+    "nome": "Encontro de Capoeira Batuqueiro",
+    "data": "2026-09-20",
+    "local": "Viana do Castelo"
+  },
+  "vencedor": {
+    "nome": "Marta Ferreira",
+    "posicao": 1,
+    "categoria": "Adultos",
+    "resultado": ""
+  },
+  "mensagem": "Axé! Parabéns pela vitória e pela dedicação na roda.",
+  "fotos": [
+    "fotos/exemplo1/1.jpg",
+    "fotos/exemplo1/2.jpg",
+    "fotos/exemplo1/3.jpg"
+  ],
+  "tipo": "podio",
+  "numero": "0001"
+}

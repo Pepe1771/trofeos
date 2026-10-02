@@ -1,0 +1,26 @@
+{
+  "id": "exemplo3",
+  "tipo": "participacao",
+  "numero": "0024",
+  "publicado": true,
+  "consentimento": true,
+  "marca": {
+    "logo": "logos/batuqueiro.jpg",
+    "fundo": "#141410",
+    "cor1": "#E1030E",
+    "cor2": "#CA9A2E"
+  },
+  "evento": {
+    "nome": "Encontro de Capoeira Batuqueiro",
+    "data": "2026-09-20",
+    "local": "Viana do Castelo"
+  },
+  "vencedor": {
+    "nome": "João Pereira",
+    "categoria": "Infantil"
+  },
+  "mensagem": "Obrigado por fazeres parte da roda. Axé!",
+  "fotos": [
+    "fotos/exemplo1/2.jpg"
+  ]
+}
