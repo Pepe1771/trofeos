@@ -1,0 +1,25 @@
+{
+  "id": "r4fcnmgz",
+  "tipo": "podio",
+  "numero": "0003",
+  "publicado": false,
+  "marca": {
+    "fundo": "#141410",
+    "cor1": "#e1030e",
+    "cor2": "#ca9a2e",
+    "logo": "logos/batuqueiro.jpg"
+  },
+  "evento": {
+    "nome": "Torneio Batuqueiro 2027",
+    "data": "2026-05-07",
+    "local": "Viana do Castelo"
+  },
+  "vencedor": {
+    "nome": "",
+    "posicao": 3,
+    "categoria": "Adultos",
+    "resultado": ""
+  },
+  "mensagem": "",
+  "fotos": []
+}
